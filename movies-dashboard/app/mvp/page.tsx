@@ -12,20 +12,19 @@ export default function MVPPage() {
         useState(true);
 
 
-
     useEffect(() => {
 
         const cargarPeliculas = async () => {
 
             try {
 
-                const response = await fetch(
-                    "https://devsapihub.com/api-movies"
-                );
+                const response =
+                    await fetch(
+                        "https://devsapihub.com/api-movies"
+                    );
 
-                const data = await response.json();
-
-                console.log(data);
+                const data =
+                    await response.json();
 
                 setMovies(data);
 
@@ -45,25 +44,19 @@ export default function MVPPage() {
 
 
 
-
     if (loading) {
 
         return (
 
             <div className="loading">
 
-                <h1>
-
-                    Cargando películas...
-
-                </h1>
+                Cargando películas...
 
             </div>
 
-        )
+        );
 
     }
-
 
 
 
@@ -71,11 +64,46 @@ export default function MVPPage() {
 
         <div className="container">
 
-            <h1 className="title">
+            <div className="header">
 
-                Movies App
+                <h1 className="title">
 
-            </h1>
+                    Movies App
+
+                </h1>
+
+
+                <div className="nav-buttons">
+
+                    <a href="/login">
+
+                        <button>
+                            Iniciar sesión
+                        </button>
+
+                    </a>
+
+
+                    <a href="/register">
+
+                        <button>
+                            Crear cuenta
+                        </button>
+
+                    </a>
+
+
+                    <a href="/user">
+
+                        <button>
+                            Mi perfil
+                        </button>
+
+                    </a>
+
+                </div>
+
+            </div>
 
 
 
@@ -83,32 +111,50 @@ export default function MVPPage() {
 
                 {
 
-                    movies.map((movie: any, index: number) => (
+                    movies.map(
+                        (
+                            movie:any,
+                            index:number
+                        ) => (
 
                         <div
-                            key={index}
-                            className="movie-card"
+                        key={index}
+                        className="movie-card"
                         >
 
-                            <div className="movie-content">
+                            <div
+                            className="movie-content"
+                            >
 
-                                <h2 className="movie-title">
+                                <h2
+                                className="movie-title"
+                                >
 
                                     {
-                                        movie.title ||
-                                        movie.name ||
-                                        "Sin título"
+
+                                    movie.title ||
+
+                                    movie.name ||
+
+                                    "Sin título"
+
                                     }
 
                                 </h2>
 
 
-                                <p className="movie-description">
+                                <p
+                                className="movie-description"
+                                >
 
                                     {
-                                        movie.description ||
-                                        movie.synopsis ||
-                                        "Pelicula disponible"
+
+                                    movie.description ||
+
+                                    movie.synopsis ||
+
+                                    "Película"
+
                                     }
 
                                 </p>
@@ -125,6 +171,6 @@ export default function MVPPage() {
 
         </div>
 
-    )
+    );
 
 }

@@ -1,83 +1,151 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 
-export default function Home() {
+type Movie = any;
 
-  const [movies, setMovies] = useState<any[]>([]);
+export default function Page() {
+
+  const router = useRouter();
+
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🎬 CARGAR PELÍCULAS
+  // 🔒 Verificar sesión
   useEffect(() => {
 
-    const cargarPeliculas = async () => {
+    const checkUser = async () => {
 
-      try {
+      const { data } = await supabase.auth.getUser();
 
-        const response = await fetch(
-          "https://devsapihub.com/api-movies"
-        );
-
-        const data = await response.json();
-
-        console.log(data);
-
-        setMovies(data);
-
-      } catch (error) {
-        console.log(error);
+      // 👉 Si NO hay usuario, solo carga películas (modo público)
+      if (!data.user) {
+        fetchMovies();
+      } else {
+        fetchMovies();
       }
-
-      setLoading(false);
 
     };
 
-    cargarPeliculas();
+    checkUser();
 
   }, []);
 
-  // ⏳ LOADING
+  // 🎬 API
+  const fetchMovies = async () => {
+
+    try {
+
+      const response = await fetch(
+        "https://devsapihub.com/api-movies"
+      );
+
+      const data = await response.json();
+
+      console.log("API:", data);
+
+      const peliculas =
+        Array.isArray(data)
+          ? data
+          : data.movies ||
+            data.results ||
+            data.data ||
+            [];
+
+      setMovies(peliculas);
+
+    } catch (error) {
+      console.log(error);
+      setMovies([]);
+    }
+
+    setLoading(false);
+  };
+
+  const cerrarSesion = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <h1 className="text-2xl">
-          Cargando películas...
-        </h1>
-      </div>
+      <main style={styles.loading}>
+        <h1>Cargando películas...</h1>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 p-6">
+    <main style={styles.container}>
 
-      <h1 className="text-4xl font-bold text-center mb-8">
-        🎬 Movies App
-      </h1>
+      {/* 🔥 BOTONES */}
+      <div style={{ textAlign: "center", marginBottom: "30px" }}>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <h1 style={styles.titulo}>
+          🎬 Movies App
+        </h1>
 
-        {movies.map((movie: any, index: number) => (
+        <button
+          onClick={() => router.push("/login")}
+          style={styles.boton}
+        >
+          Login
+        </button>
 
-          <div
-            key={index}
-            className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition"
-          >
+        <button
+          onClick={() => router.push("/register")}
+          style={styles.boton}
+        >
+          Registro
+        </button>
 
-            <h2 className="text-xl font-bold mb-2 text-center">
-              {
-                movie.title ||
-                movie.name ||
-                "Sin título"
-              }
-            </h2>
+        <button
+          onClick={() => router.push("/user")}
+          style={styles.boton}
+        >
+          Panel Usuario
+        </button>
 
-            <p className="text-gray-600 text-sm text-center">
-              {
-                movie.description ||
-                movie.synopsis ||
-                "Película disponible"
-              }
-            </p>
+        <button
+          onClick={() => router.push("/mvp")}
+          style={styles.boton}
+        >
+          Ver MVP
+        </button>
+
+        <button
+          onClick={cerrarSesion}
+          style={{ ...styles.boton, background: "red" }}
+        >
+          Cerrar sesión
+        </button>
+
+      </div>
+
+      {/* 🎬 GRID */}
+      <div style={styles.grid}>
+
+        {movies.map((movie, index) => (
+
+          <div key={index} style={styles.card}>
+
+            <div style={styles.info}>
+
+              <h2 style={styles.nombre}>
+                {movie.title || movie.name || "Sin título"}
+              </h2>
+
+              <p style={styles.descripcion}>
+                {
+                  movie.description ||
+                  movie.synopsis ||
+                  "Sin descripción"
+                }
+              </p>
+
+            </div>
 
           </div>
 
@@ -85,6 +153,73 @@ export default function Home() {
 
       </div>
 
-    </div>
+    </main>
   );
 }
+
+
+const styles: { [key: string]: React.CSSProperties } = {
+
+  container:{
+    background:"#111",
+    minHeight:"100vh",
+    padding:"40px"
+  },
+
+  loading:{
+    display:"flex",
+    justifyContent:"center",
+    alignItems:"center",
+    height:"100vh",
+    background:"#111",
+    color:"white"
+  },
+
+  titulo:{
+    color:"white",
+    fontSize:"45px",
+    textAlign:"center",
+    marginBottom:"20px"
+  },
+
+  boton:{
+    margin:"10px",
+    padding:"10px 20px",
+    borderRadius:"8px",
+    border:"none",
+    cursor:"pointer",
+    background:"#2563eb",
+    color:"white"
+  },
+
+  grid:{
+    display:"grid",
+    gridTemplateColumns:
+    "repeat(auto-fit,minmax(250px,1fr))",
+    gap:"25px"
+  },
+
+  card:{
+    background:"#1e1e1e",
+    borderRadius:"15px",
+    overflow:"hidden",
+    boxShadow:
+    "0 10px 20px rgba(0,0,0,.4)"
+  },
+
+  info:{
+    padding:"15px"
+  },
+
+  nombre:{
+    color:"white",
+    fontSize:"22px",
+    marginBottom:"10px"
+  },
+
+  descripcion:{
+    color:"#bcbcbc",
+    fontSize:"15px"
+  }
+
+};

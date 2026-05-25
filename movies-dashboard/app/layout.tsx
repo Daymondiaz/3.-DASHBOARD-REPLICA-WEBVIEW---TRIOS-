@@ -1,49 +1,66 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+"use client";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-// 🔥 METADATA PERSONALIZADA
-export const metadata: Metadata = {
-  title: "Movies App",
-  description: "Aplicación de películas con autenticación y consumo de API",
-};
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link";
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user ?? null);
+    };
+
+    getUser();
+
+    const { data: listener } =
+      supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null);
+      });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+
+  }, []);
+
   return (
-    <html
-      lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-zinc-100">
+    <html lang="es">
+      <body>
 
-        {/* 🔥 HEADER GLOBAL */}
-        <header className="bg-black text-white p-4 text-center text-xl font-bold">
-          🎬 Movies App
-        </header>
+        {/* 🔥 MENÚ GLOBAL */}
+        <nav style={{
+          padding: "15px",
+          background: "#eee",
+          display: "flex",
+          gap: "20px",
+          justifyContent: "center"
+        }}>
 
-        {/* CONTENIDO */}
-        <main className="flex-1">
-          {children}
-        </main>
+          {!user ? (
+            <>
+              <Link href="/login">Login</Link>
+              <Link href="/register">Registro</Link>
+            </>
+          ) : (
+            <>
+              <Link href="/">Home</Link>
+              <Link href="/mvp">MVP</Link>
+              <Link href="/user">Usuario</Link>
+            </>
+          )}
 
-        {/* 🔥 FOOTER */}
-        <footer className="bg-black text-white text-center p-3 text-sm">
-          © 2026 Movies App - Proyecto NoSQL
-        </footer>
+        </nav>
+
+        <main>{children}</main>
 
       </body>
     </html>
