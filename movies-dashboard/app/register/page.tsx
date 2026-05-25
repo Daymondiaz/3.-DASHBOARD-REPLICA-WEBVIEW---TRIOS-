@@ -5,30 +5,71 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
+
+  // FORM
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] =
+  useState<string | null>(null);
 
+  // LOADING
   const [loading, setLoading] = useState(true);
+
+  // 🔥 API MOVIES
+  const [movies, setMovies] =
+  useState<any[]>([]);
+  const [loadingMovies, setLoadingMovies] =
+  useState(false);
 
   const router = useRouter();
 
+  // 🔐 VERIFICAR SESIÓN
   useEffect(() => {
+
     const checkUser = async () => {
-      const { data } = await supabase.auth.getUser();
+
+      const { data } =
+      await supabase.auth.getUser();
 
       if (!data.user) {
         setLoading(false);
       } else {
-        router.push("/user");
+        cargarPeliculas(); // 👈 si ya está logueado
       }
+
     };
 
     checkUser();
-  }, [router]);
 
+  }, []);
+
+  // 🎬 CARGAR PELÍCULAS
+  const cargarPeliculas = async () => {
+
+    setLoadingMovies(true);
+
+    try {
+
+      const response = await fetch(
+        "https://devsapihub.com/api-movies"
+      );
+
+      const data = await response.json();
+
+      setMovies(data);
+
+    } catch (error) {
+      console.log(error);
+    }
+
+    setLoading(false);
+    setLoadingMovies(false);
+
+  };
+
+  // 📝 REGISTRO
   const handleRegister = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
@@ -67,13 +108,72 @@ export default function RegisterPage() {
     if (error) {
       setMessage(error.message);
     } else {
-      setMessage("Usuario registrado");
+      setMessage("✅ Usuario registrado");
+      cargarPeliculas(); // 👈 cargar API después del registro
     }
+
   };
 
-  if (loading)
+  // ⏳ LOADING INICIAL
+  if (loading) {
     return <p>Verificando sesión...</p>;
+  }
 
+  // 🎬 SI YA HAY PELÍCULAS
+  if (movies.length > 0) {
+    return (
+      <div className="container">
+
+        <h1 className="title">
+          Movies App
+        </h1>
+
+        {loadingMovies && (
+          <h2 className="text-center">
+            Cargando películas...
+          </h2>
+        )}
+
+        <div className="movies-grid">
+
+          {movies.map((movie: any, index: number) => (
+
+            <div
+              key={index}
+              className="movie-card"
+            >
+
+              <div className="movie-content">
+
+                <h2 className="movie-title">
+                  {
+                    movie.title ||
+                    movie.name ||
+                    "Sin título"
+                  }
+                </h2>
+
+                <p className="movie-description">
+                  {
+                    movie.description ||
+                    movie.synopsis ||
+                    "Película disponible"
+                  }
+                </p>
+
+              </div>
+
+            </div>
+
+          ))}
+
+        </div>
+
+      </div>
+    );
+  }
+
+  // 📝 FORM REGISTRO
   return (
     <div className="max-w-md mx-auto mt-10 border p-6 rounded">
 
@@ -139,11 +239,9 @@ export default function RegisterPage() {
       </form>
 
       {message &&
-
         <p className="mt-4 text-center">
           {message}
         </p>
-
       }
 
       <p className="mt-5 text-center">

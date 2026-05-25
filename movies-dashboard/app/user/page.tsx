@@ -4,385 +4,255 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
-interface Estudiante{
-id:string;
-nombre:string;
-correo:string;
-telefono:string | null;
+interface Estudiante {
+  id: string;
+  nombre: string;
+  correo: string;
+  telefono: string | null;
 }
 
-export default function UserPage(){
+export default function UserPage() {
 
-const router=useRouter();
+  const router = useRouter();
 
-const [estudiante,setEstudiante]=
-useState<Estudiante|null>(null);
+  const [estudiante, setEstudiante] =
+    useState<Estudiante | null>(null);
 
-const [nombre,setNombre]=
-useState("");
+  const [nombre, setNombre] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [correo, setCorreo] = useState("");
 
-const [telefono,setTelefono]=
-useState("");
+  const [message, setMessage] =
+    useState<string | null>(null);
 
-const [correo,setCorreo]=
-useState("");
+  const [loading, setLoading] = useState(true);
 
-const [message,setMessage]=
-useState("");
+  // 🔥 NUEVO: API MOVIES
+  const [movies, setMovies] =
+    useState<any[]>([]);
 
-const [loading,setLoading]=
-useState(true);
+  const [loadingMovies, setLoadingMovies] =
+    useState(true);
 
 
+  // 🔒 VALIDACIÓN + CARGA
+  useEffect(() => {
 
-useEffect(()=>{
+    const cargarUsuario = async () => {
 
-const cargarUsuario=async()=>{
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
 
-const {
-data:{user}
-}=await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+        return;
+      }
 
+      const { data, error } = await supabase
+        .from("estudiantes")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
 
-if(!user){
+      if (error) {
+        setMessage("❌ " + error.message);
+      } else if (data) {
 
-router.push("/login");
-return;
+        setEstudiante(data);
 
-}
+        setNombre(data.nombre || "");
+        setTelefono(data.telefono || "");
+        setCorreo(data.correo || "");
 
+        cargarPeliculas(); // 👈 cargar API aquí
 
-const {data,error}=await supabase
+      } else {
+        setMessage("❌ No existe perfil en la BD");
+      }
 
-.from("estudiantes")
+      setLoading(false);
+    };
 
-.select("*")
+    cargarUsuario();
 
-.eq("id",user.id)
+  }, [router]);
 
-.single();
 
+  // 🎬 API MOVIES
+  const cargarPeliculas = async () => {
 
-if(error){
+    setLoadingMovies(true);
 
-setMessage(
-"❌ "+error.message
-);
+    try {
 
-}else if(data){
+      const response = await fetch(
+        "https://devsapihub.com/api-movies"
+      );
 
-setEstudiante(data);
+      const data = await response.json();
 
-setNombre(
-data.nombre || ""
-);
+      setMovies(data);
 
-setTelefono(
-data.telefono || ""
-);
+    } catch (error) {
+      console.log(error);
+    }
 
-setCorreo(
-data.correo || ""
-);
+    setLoadingMovies(false);
+  };
 
-}
 
-setLoading(false);
+  // 🔄 UPDATE
+  const guardarCambios = async () => {
 
-};
+    if (!estudiante) {
+      setMessage("❌ usuario no encontrado");
+      return;
+    }
 
-cargarUsuario();
-
-},[router]);
-
-
-
-const guardarCambios=
-async()=>{
-
-if(!estudiante){
-
-setMessage(
-"❌ usuario no encontrado"
-);
-
-return;
-
-}
-
-
-const {
-data,
-error
-
-}=await supabase
-
-.from("estudiantes")
-
-.update({
-
-nombre,
-telefono,
-correo
-
-})
-
-.eq(
-"id",
-estudiante.id
-)
-
-.select();
-
-
-
-console.log(data);
-console.log(error);
-
-
-if(error){
-
-setMessage(
-"❌ "+error.message
-);
-
-}else{
-
-setMessage(
-"✅ cambios guardados"
-);
-
-}
-
-};
-
-
-
-const cerrarSesion=
-async()=>{
-
-await supabase.auth.signOut();
-
-router.push("/login");
-
-};
-
-
-
-if(loading){
-
-return(
-
-<p className="
-text-center
-mt-10
-">
-
-Cargando...
-
-</p>
-
-)
-
-}
-
-
-
-return(
-
-<div className="
-max-w-md
-mx-auto
-mt-10
-border
-rounded-lg
-shadow
-p-6
-">
-
-<h1 className="
-text-2xl
-font-bold
-text-center
-mb-6
-">
-
-Mi Perfil
-
-</h1>
-
-
-
-<label>
-
-Nombre
-
-</label>
-
-<input
-
-type="text"
-
-placeholder="
-Ej: Daymon Diaz
-"
-
-value={nombre}
-
-onChange={(e)=>
-setNombre(
-e.target.value
-)}
-
-className="
-border
-p-2
-rounded
-w-full
-mb-4
-"
-
-/>
-
-
-
-
-<label>
-
-Telefono
-
-</label>
-
-<input
-
-type="text"
-
-placeholder="
-Ej: 3001234567
-"
-
-value={telefono}
-
-onChange={(e)=>
-setTelefono(
-e.target.value
-)}
-
-className="
-border
-p-2
-rounded
-w-full
-mb-4
-"
-
-/>
-
-
-
-
-<label>
-
-Correo
-
-</label>
-
-<input
-
-type="email"
-
-placeholder="
-correo@gmail.com
-"
-
-value={correo}
-
-onChange={(e)=>
-setCorreo(
-e.target.value
-)}
-
-className="
-border
-p-2
-rounded
-w-full
-mb-5
-"
-
-/>
-
-
-
-
-<button
-
-onClick={
-guardarCambios
-}
-
-className="
-bg-blue-600
-text-white
-p-2
-rounded
-w-full
-hover:bg-blue-700
-"
-
->
-
-Guardar cambios
-
-</button>
-
-
-
-
-<button
-
-onClick={
-cerrarSesion
-}
-
-className="
-bg-red-600
-text-white
-p-2
-rounded
-w-full
-mt-4
-hover:bg-red-700
-"
-
->
-
-Cerrar sesión
-
-</button>
-
-
-
-
-{
-
-message &&
-
-<p className="
-mt-5
-text-center
-">
-
-{message}
-
-</p>
-
-}
-
-
-
-</div>
-
-)
-
+    const { error } = await supabase
+      .from("estudiantes")
+      .update({
+        nombre,
+        telefono
+      })
+      .eq("id", estudiante.id);
+
+    if (error) {
+      setMessage("❌ " + error.message);
+    } else {
+      setMessage("✅ cambios guardados");
+    }
+  };
+
+
+  // 🚪 LOGOUT
+  const cerrarSesion = async () => {
+
+    await supabase.auth.signOut();
+    router.push("/login");
+
+  };
+
+
+  if (loading) {
+    return (
+      <p className="text-center mt-10">
+        ⏳ Cargando...
+      </p>
+    );
+  }
+
+
+  return (
+
+    <div className="max-w-4xl mx-auto mt-10 p-6">
+
+      {/* PERFIL */}
+      <div className="border rounded-lg shadow p-6 mb-8">
+
+        <h1 className="text-2xl font-bold text-center mb-6">
+          Mi Perfil
+        </h1>
+
+        <label>Nombre</label>
+        <input
+          type="text"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          className="border p-2 rounded w-full mb-4"
+        />
+
+        <label>Teléfono</label>
+        <input
+          type="text"
+          value={telefono}
+          onChange={(e) => setTelefono(e.target.value)}
+          className="border p-2 rounded w-full mb-4"
+        />
+
+        <label>Correo</label>
+        <input
+          type="email"
+          value={correo}
+          readOnly
+          className="border p-2 rounded w-full mb-5 bg-gray-100"
+        />
+
+        <button
+          onClick={guardarCambios}
+          className="bg-blue-600 text-white p-2 rounded w-full mb-3"
+        >
+          Guardar cambios
+        </button>
+
+        <button
+          onClick={cerrarSesion}
+          className="bg-red-600 text-white p-2 rounded w-full"
+        >
+          Cerrar sesión
+        </button>
+
+        {message && (
+          <p className="mt-5 text-center">
+            {message}
+          </p>
+        )}
+
+      </div>
+
+      {/* 🎬 PELÍCULAS */}
+      <div>
+
+        <h2 className="text-2xl font-bold mb-4 text-center">
+          Películas
+        </h2>
+
+        {loadingMovies ? (
+          <p className="text-center">
+            Cargando películas...
+          </p>
+        ) : (
+
+          <div className="movies-grid">
+
+            {movies.map((movie: any, index: number) => (
+
+              <div
+                key={index}
+                className="movie-card"
+              >
+
+                <div className="movie-content">
+
+                  <h3 className="movie-title">
+                    {
+                      movie.title ||
+                      movie.name ||
+                      "Sin título"
+                    }
+                  </h3>
+
+                  <p className="movie-description">
+                    {
+                      movie.description ||
+                      movie.synopsis ||
+                      "Película disponible"
+                    }
+                  </p>
+
+                </div>
+
+              </div>
+
+            ))}
+
+          </div>
+
+        )}
+
+      </div>
+
+    </div>
+  );
 }
