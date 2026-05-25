@@ -4,385 +4,189 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
-interface Estudiante{
-id:string;
-nombre:string;
-correo:string;
-telefono:string | null;
+interface Estudiante {
+  id: string;
+  nombre: string;
+  correo: string;
+  telefono: string | null;
 }
 
-export default function UserPage(){
+export default function UserPage() {
 
-const router=useRouter();
+  const router = useRouter();
 
-const [estudiante,setEstudiante]=
-useState<Estudiante|null>(null);
+  const [estudiante, setEstudiante] =
+    useState<Estudiante | null>(null);
 
-const [nombre,setNombre]=
-useState("");
+  const [nombre, setNombre] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [correo, setCorreo] = useState("");
 
-const [telefono,setTelefono]=
-useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-const [correo,setCorreo]=
-useState("");
 
-const [message,setMessage]=
-useState("");
+  // 🔒 VALIDACIÓN + CARGA (igual que tu código pero mejorado)
+  useEffect(() => {
 
-const [loading,setLoading]=
-useState(true);
+    const cargarUsuario = async () => {
 
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
 
+      if (!user) {
+        router.push("/login");
+        return;
+      }
 
-useEffect(()=>{
+      const { data, error } = await supabase
+        .from("estudiantes")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle(); // 🔥 CAMBIO CLAVE
 
-const cargarUsuario=async()=>{
+      if (error) {
+        setMessage("❌ " + error.message);
+      } else if (data) {
 
-const {
-data:{user}
-}=await supabase.auth.getUser();
+        setEstudiante(data);
 
+        setNombre(data.nombre || "");
+        setTelefono(data.telefono || "");
+        setCorreo(data.correo || "");
 
-if(!user){
+      } else {
+        setMessage("❌ No existe perfil en la BD");
+      }
 
-router.push("/login");
-return;
+      setLoading(false);
+    };
 
-}
+    cargarUsuario();
 
+  }, [router]);
 
-const {data,error}=await supabase
 
-.from("estudiantes")
+  // 🔄 UPDATE (solo nombre y teléfono como dice la guía)
+  const guardarCambios = async () => {
 
-.select("*")
+    if (!estudiante) {
+      setMessage("❌ usuario no encontrado");
+      return;
+    }
 
-.eq("id",user.id)
+    const { error } = await supabase
+      .from("estudiantes")
+      .update({
+        nombre,
+        telefono
+        // ❌ quitamos correo (la guía dice NO editarlo)
+      })
+      .eq("id", estudiante.id);
 
-.single();
+    if (error) {
+      setMessage("❌ " + error.message);
+    } else {
+      setMessage("✅ cambios guardados");
+    }
+  };
 
 
-if(error){
+  // 🚪 LOGOUT
+  const cerrarSesion = async () => {
 
-setMessage(
-"❌ "+error.message
-);
+    await supabase.auth.signOut();
 
-}else if(data){
+    router.push("/login");
 
-setEstudiante(data);
+  };
 
-setNombre(
-data.nombre || ""
-);
 
-setTelefono(
-data.telefono || ""
-);
+  if (loading) {
+    return (
+      <p className="text-center mt-10">
+        ⏳ Cargando...
+      </p>
+    );
+  }
 
-setCorreo(
-data.correo || ""
-);
 
-}
+  return (
 
-setLoading(false);
+    <div className="max-w-md mx-auto mt-10 border rounded-lg shadow p-6">
 
-};
+      <h1 className="text-2xl font-bold text-center mb-6">
+        Mi Perfil
+      </h1>
 
-cargarUsuario();
+      {/* NOMBRE */}
+      <label>Nombre</label>
 
-},[router]);
+      <input
+        type="text"
+        value={nombre}
+        onChange={(e) => setNombre(e.target.value)}
+        className="border p-2 rounded w-full mb-4"
+      />
 
 
+      {/* TELÉFONO */}
+      <label>Teléfono</label>
 
-const guardarCambios=
-async()=>{
+      <input
+        type="text"
+        value={telefono}
+        onChange={(e) => setTelefono(e.target.value)}
+        className="border p-2 rounded w-full mb-4"
+      />
 
-if(!estudiante){
 
-setMessage(
-"❌ usuario no encontrado"
-);
+      {/* CORREO (SOLO LECTURA 🔥) */}
+      <label>Correo</label>
 
-return;
+      <input
+        type="email"
+        value={correo}
+        readOnly
+        className="border p-2 rounded w-full mb-5 bg-gray-100"
+      />
 
-}
 
+      {/* BOTÓN GUARDAR */}
+      <button
+        onClick={guardarCambios}
+        className="bg-blue-600 text-white p-2 rounded w-full hover:bg-blue-700"
+      >
+        Guardar cambios
+      </button>
 
-const {
-data,
-error
 
-}=await supabase
+      {/* 🔥 BOTÓN MVP (IMPORTANTE PARA SIMILITUD) */}
+      <button
+        onClick={() => router.push("/mvp")}
+        className="bg-green-600 text-white p-2 rounded w-full mt-4 hover:bg-green-700"
+      >
+        Ver películas
+      </button>
 
-.from("estudiantes")
 
-.update({
+      {/* LOGOUT */}
+      <button
+        onClick={cerrarSesion}
+        className="bg-red-600 text-white p-2 rounded w-full mt-4 hover:bg-red-700"
+      >
+        Cerrar sesión
+      </button>
 
-nombre,
-telefono,
-correo
 
-})
+      {message && (
+        <p className="mt-5 text-center">
+          {message}
+        </p>
+      )}
 
-.eq(
-"id",
-estudiante.id
-)
+    </div>
 
-.select();
-
-
-
-console.log(data);
-console.log(error);
-
-
-if(error){
-
-setMessage(
-"❌ "+error.message
-);
-
-}else{
-
-setMessage(
-"✅ cambios guardados"
-);
-
-}
-
-};
-
-
-
-const cerrarSesion=
-async()=>{
-
-await supabase.auth.signOut();
-
-router.push("/login");
-
-};
-
-
-
-if(loading){
-
-return(
-
-<p className="
-text-center
-mt-10
-">
-
-Cargando...
-
-</p>
-
-)
-
-}
-
-
-
-return(
-
-<div className="
-max-w-md
-mx-auto
-mt-10
-border
-rounded-lg
-shadow
-p-6
-">
-
-<h1 className="
-text-2xl
-font-bold
-text-center
-mb-6
-">
-
-Mi Perfil
-
-</h1>
-
-
-
-<label>
-
-Nombre
-
-</label>
-
-<input
-
-type="text"
-
-placeholder="
-Ej: Daymon Diaz
-"
-
-value={nombre}
-
-onChange={(e)=>
-setNombre(
-e.target.value
-)}
-
-className="
-border
-p-2
-rounded
-w-full
-mb-4
-"
-
-/>
-
-
-
-
-<label>
-
-Telefono
-
-</label>
-
-<input
-
-type="text"
-
-placeholder="
-Ej: 3001234567
-"
-
-value={telefono}
-
-onChange={(e)=>
-setTelefono(
-e.target.value
-)}
-
-className="
-border
-p-2
-rounded
-w-full
-mb-4
-"
-
-/>
-
-
-
-
-<label>
-
-Correo
-
-</label>
-
-<input
-
-type="email"
-
-placeholder="
-correo@gmail.com
-"
-
-value={correo}
-
-onChange={(e)=>
-setCorreo(
-e.target.value
-)}
-
-className="
-border
-p-2
-rounded
-w-full
-mb-5
-"
-
-/>
-
-
-
-
-<button
-
-onClick={
-guardarCambios
-}
-
-className="
-bg-blue-600
-text-white
-p-2
-rounded
-w-full
-hover:bg-blue-700
-"
-
->
-
-Guardar cambios
-
-</button>
-
-
-
-
-<button
-
-onClick={
-cerrarSesion
-}
-
-className="
-bg-red-600
-text-white
-p-2
-rounded
-w-full
-mt-4
-hover:bg-red-700
-"
-
->
-
-Cerrar sesión
-
-</button>
-
-
-
-
-{
-
-message &&
-
-<p className="
-mt-5
-text-center
-">
-
-{message}
-
-</p>
-
-}
-
-
-
-</div>
-
-)
-
+  );
 }
