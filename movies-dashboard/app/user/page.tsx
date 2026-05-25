@@ -22,11 +22,20 @@ export default function UserPage() {
   const [telefono, setTelefono] = useState("");
   const [correo, setCorreo] = useState("");
 
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] =
+    useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
 
+  // 🔥 NUEVO: API MOVIES
+  const [movies, setMovies] =
+    useState<any[]>([]);
 
-  // 🔒 VALIDACIÓN + CARGA (igual que tu código pero mejorado)
+  const [loadingMovies, setLoadingMovies] =
+    useState(true);
+
+
+  // 🔒 VALIDACIÓN + CARGA
   useEffect(() => {
 
     const cargarUsuario = async () => {
@@ -44,7 +53,7 @@ export default function UserPage() {
         .from("estudiantes")
         .select("*")
         .eq("id", user.id)
-        .maybeSingle(); // 🔥 CAMBIO CLAVE
+        .maybeSingle();
 
       if (error) {
         setMessage("❌ " + error.message);
@@ -55,6 +64,8 @@ export default function UserPage() {
         setNombre(data.nombre || "");
         setTelefono(data.telefono || "");
         setCorreo(data.correo || "");
+
+        cargarPeliculas(); // 👈 cargar API aquí
 
       } else {
         setMessage("❌ No existe perfil en la BD");
@@ -68,7 +79,30 @@ export default function UserPage() {
   }, [router]);
 
 
-  // 🔄 UPDATE (solo nombre y teléfono como dice la guía)
+  // 🎬 API MOVIES
+  const cargarPeliculas = async () => {
+
+    setLoadingMovies(true);
+
+    try {
+
+      const response = await fetch(
+        "https://devsapihub.com/api-movies"
+      );
+
+      const data = await response.json();
+
+      setMovies(data);
+
+    } catch (error) {
+      console.log(error);
+    }
+
+    setLoadingMovies(false);
+  };
+
+
+  // 🔄 UPDATE
   const guardarCambios = async () => {
 
     if (!estudiante) {
@@ -81,7 +115,6 @@ export default function UserPage() {
       .update({
         nombre,
         telefono
-        // ❌ quitamos correo (la guía dice NO editarlo)
       })
       .eq("id", estudiante.id);
 
@@ -97,7 +130,6 @@ export default function UserPage() {
   const cerrarSesion = async () => {
 
     await supabase.auth.signOut();
-
     router.push("/login");
 
   };
@@ -114,79 +146,113 @@ export default function UserPage() {
 
   return (
 
-    <div className="max-w-md mx-auto mt-10 border rounded-lg shadow p-6">
+    <div className="max-w-4xl mx-auto mt-10 p-6">
 
-      <h1 className="text-2xl font-bold text-center mb-6">
-        Mi Perfil
-      </h1>
+      {/* PERFIL */}
+      <div className="border rounded-lg shadow p-6 mb-8">
 
-      {/* NOMBRE */}
-      <label>Nombre</label>
+        <h1 className="text-2xl font-bold text-center mb-6">
+          Mi Perfil
+        </h1>
 
-      <input
-        type="text"
-        value={nombre}
-        onChange={(e) => setNombre(e.target.value)}
-        className="border p-2 rounded w-full mb-4"
-      />
+        <label>Nombre</label>
+        <input
+          type="text"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          className="border p-2 rounded w-full mb-4"
+        />
 
+        <label>Teléfono</label>
+        <input
+          type="text"
+          value={telefono}
+          onChange={(e) => setTelefono(e.target.value)}
+          className="border p-2 rounded w-full mb-4"
+        />
 
-      {/* TELÉFONO */}
-      <label>Teléfono</label>
+        <label>Correo</label>
+        <input
+          type="email"
+          value={correo}
+          readOnly
+          className="border p-2 rounded w-full mb-5 bg-gray-100"
+        />
 
-      <input
-        type="text"
-        value={telefono}
-        onChange={(e) => setTelefono(e.target.value)}
-        className="border p-2 rounded w-full mb-4"
-      />
+        <button
+          onClick={guardarCambios}
+          className="bg-blue-600 text-white p-2 rounded w-full mb-3"
+        >
+          Guardar cambios
+        </button>
 
+        <button
+          onClick={cerrarSesion}
+          className="bg-red-600 text-white p-2 rounded w-full"
+        >
+          Cerrar sesión
+        </button>
 
-      {/* CORREO (SOLO LECTURA 🔥) */}
-      <label>Correo</label>
+        {message && (
+          <p className="mt-5 text-center">
+            {message}
+          </p>
+        )}
 
-      <input
-        type="email"
-        value={correo}
-        readOnly
-        className="border p-2 rounded w-full mb-5 bg-gray-100"
-      />
+      </div>
 
+      {/* 🎬 PELÍCULAS */}
+      <div>
 
-      {/* BOTÓN GUARDAR */}
-      <button
-        onClick={guardarCambios}
-        className="bg-blue-600 text-white p-2 rounded w-full hover:bg-blue-700"
-      >
-        Guardar cambios
-      </button>
+        <h2 className="text-2xl font-bold mb-4 text-center">
+          Películas
+        </h2>
 
+        {loadingMovies ? (
+          <p className="text-center">
+            Cargando películas...
+          </p>
+        ) : (
 
-      {/* 🔥 BOTÓN MVP (IMPORTANTE PARA SIMILITUD) */}
-      <button
-        onClick={() => router.push("/mvp")}
-        className="bg-green-600 text-white p-2 rounded w-full mt-4 hover:bg-green-700"
-      >
-        Ver películas
-      </button>
+          <div className="movies-grid">
 
+            {movies.map((movie: any, index: number) => (
 
-      {/* LOGOUT */}
-      <button
-        onClick={cerrarSesion}
-        className="bg-red-600 text-white p-2 rounded w-full mt-4 hover:bg-red-700"
-      >
-        Cerrar sesión
-      </button>
+              <div
+                key={index}
+                className="movie-card"
+              >
 
+                <div className="movie-content">
 
-      {message && (
-        <p className="mt-5 text-center">
-          {message}
-        </p>
-      )}
+                  <h3 className="movie-title">
+                    {
+                      movie.title ||
+                      movie.name ||
+                      "Sin título"
+                    }
+                  </h3>
+
+                  <p className="movie-description">
+                    {
+                      movie.description ||
+                      movie.synopsis ||
+                      "Película disponible"
+                    }
+                  </p>
+
+                </div>
+
+              </div>
+
+            ))}
+
+          </div>
+
+        )}
+
+      </div>
 
     </div>
-
   );
 }
