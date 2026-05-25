@@ -13,25 +13,25 @@ export default function Page() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔒 VALIDAR USUARIO (IMPORTANTE PARA TU NOTA)
+  // 🔒 Verificar sesión
   useEffect(() => {
 
     const checkUser = async () => {
 
       const { data } = await supabase.auth.getUser();
 
+      // 👉 Si NO hay usuario, solo carga películas (modo público)
       if (!data.user) {
-        router.push("/login");
-        return;
+        fetchMovies();
+      } else {
+        fetchMovies();
       }
 
-      fetchMovies();
     };
 
     checkUser();
 
-  }, [router]);
-
+  }, []);
 
   // 🎬 API
   const fetchMovies = async () => {
@@ -46,7 +46,6 @@ export default function Page() {
 
       console.log("API:", data);
 
-      // 🔥 FIX DEFINITIVO (como tú lo hiciste, pero mejorado)
       const peliculas =
         Array.isArray(data)
           ? data
@@ -65,12 +64,10 @@ export default function Page() {
     setLoading(false);
   };
 
-
   const cerrarSesion = async () => {
     await supabase.auth.signOut();
     router.push("/login");
   };
-
 
   if (loading) {
     return (
@@ -83,18 +80,39 @@ export default function Page() {
   return (
     <main style={styles.container}>
 
-      {/* 🔥 HEADER TIPO DASHBOARD */}
-      <div style={{ marginBottom: "30px", textAlign: "center" }}>
+      {/* 🔥 BOTONES */}
+      <div style={{ textAlign: "center", marginBottom: "30px" }}>
 
-        <h1 style={styles.titulo as React.CSSProperties}>
+        <h1 style={styles.titulo}>
           🎬 Movies App
         </h1>
 
         <button
-          onClick={() => router.push("/panel")}
+          onClick={() => router.push("/login")}
           style={styles.boton}
         >
-          Ir al Panel
+          Login
+        </button>
+
+        <button
+          onClick={() => router.push("/register")}
+          style={styles.boton}
+        >
+          Registro
+        </button>
+
+        <button
+          onClick={() => router.push("/user")}
+          style={styles.boton}
+        >
+          Panel Usuario
+        </button>
+
+        <button
+          onClick={() => router.push("/mvp")}
+          style={styles.boton}
+        >
+          Ver MVP
         </button>
 
         <button
@@ -106,8 +124,7 @@ export default function Page() {
 
       </div>
 
-
-      {/* GRID */}
+      {/* 🎬 GRID */}
       <div style={styles.grid}>
 
         {movies.map((movie, index) => (
@@ -141,7 +158,7 @@ export default function Page() {
 }
 
 
-const styles = {
+const styles: { [key: string]: React.CSSProperties } = {
 
   container:{
     background:"#111",
@@ -187,8 +204,7 @@ const styles = {
     borderRadius:"15px",
     overflow:"hidden",
     boxShadow:
-    "0 10px 20px rgba(0,0,0,.4)",
-    transition:"0.3s"
+    "0 10px 20px rgba(0,0,0,.4)"
   },
 
   info:{
@@ -203,8 +219,7 @@ const styles = {
 
   descripcion:{
     color:"#bcbcbc",
-    fontSize:"15px",
-    lineHeight:"1.5"
+    fontSize:"15px"
   }
 
 };
