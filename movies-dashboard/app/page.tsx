@@ -7,7 +7,6 @@ export default function Home() {
   const [movies, setMovies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🎬 CARGAR PELÍCULAS
   useEffect(() => {
 
     const cargarPeliculas = async () => {
@@ -20,12 +19,22 @@ export default function Home() {
 
         const data = await response.json();
 
-        console.log(data);
+        console.log("API:", data);
 
-        setMovies(data);
+        // 🔥 CORRECCIÓN CLAVE
+        if (Array.isArray(data)) {
+          setMovies(data);
+        } else if (data.results) {
+          setMovies(data.results);
+        } else if (data.data) {
+          setMovies(data.data);
+        } else {
+          setMovies([]);
+        }
 
       } catch (error) {
-        console.log(error);
+        console.log("Error:", error);
+        setMovies([]);
       }
 
       setLoading(false);
@@ -36,7 +45,7 @@ export default function Home() {
 
   }, []);
 
-  // ⏳ LOADING
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -48,43 +57,46 @@ export default function Home() {
   }
 
   return (
+
     <div className="min-h-screen bg-zinc-100 p-6">
 
       <h1 className="text-4xl font-bold text-center mb-8">
         🎬 Movies App
       </h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      {/* 🔥 VALIDACIÓN EXTRA */}
+      {movies.length === 0 ? (
+        <p className="text-center text-gray-600">
+          No hay películas disponibles
+        </p>
+      ) : (
 
-        {movies.map((movie: any, index: number) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
 
-          <div
-            key={index}
-            className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition"
-          >
+          {movies.map((movie: any, index: number) => (
 
-            <h2 className="text-xl font-bold mb-2 text-center">
-              {
-                movie.title ||
-                movie.name ||
-                "Sin título"
-              }
-            </h2>
+            <div
+              key={index}
+              className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition"
+            >
 
-            <p className="text-gray-600 text-sm text-center">
-              {
-                movie.description ||
-                movie.synopsis ||
-                "Película disponible"
-              }
-            </p>
+              <h2 className="text-xl font-bold mb-2 text-center">
+                {movie.title || movie.name || "Sin título"}
+              </h2>
 
-          </div>
+              <p className="text-gray-600 text-sm text-center">
+                {movie.description || movie.synopsis || "Película disponible"}
+              </p>
 
-        ))}
+            </div>
 
-      </div>
+          ))}
+
+        </div>
+
+      )}
 
     </div>
+
   );
 }
